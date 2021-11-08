@@ -1,5 +1,12 @@
 package main;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 public class Main {
 
     static int pc;
@@ -17,10 +24,10 @@ public class Main {
         System.out.println("Hello RISC-V World!");
 
         pc = 0;
+        
+        
 
-        
-        
-        for (; ; ) {
+        for (;;) {
 
             int instr = progr[pc >> 2]; //divide by 4
             int opcode = instr & 0x7f;
@@ -33,6 +40,9 @@ public class Main {
             int jImm2 = (instr >> 21) & 0x3FF;
             int jImm3 = (instr >> 20) & 0x1;
             int jImm4 = (instr >> 12) & 0xFF;
+            int funct3 = (instr >> 12) & 0x7;
+            int funct7 = (instr >> 25);
+            int sImm = (instr >> 25);
 
             switch (opcode) {
             	case 0x37: // LUI - Load upper immediate - 0110111 - 55 - U-type
@@ -47,10 +57,67 @@ public class Main {
             	case 0x67: // JALR - Jump & Link Register - 1100111 - 103 - I-type
             		reg[rd] = pc+4;
             		pc = (iImm + rs1) & 0xFFFFFFFE;  
-                case 0x13: //ADDI
-                    reg[rd] = reg[rs1] + iImm;
+                case 0x13: // Immediate calculations - I-Type
+                	switch (funct3) {  
+	                    case 0x0: // ADDI - Add Immediate - 000
+	                        reg[rd] = reg[rs1] + iImm;
+	                        break;
+	                    case 0x2: // SLTI - 010
+	                    	if (reg[rs1] < iImm) {
+	                    		reg[rd] = 1;
+	                    	} else {
+	                    		reg[rd] = 0;
+	                    	}
+	                        break;
+	                    case 0x3: // SLTIU - 011
+	                    	if (reg[rs1] < (iImm>>>20)) {
+	                    		reg[rd] = 1;
+	                    	} else {
+	                    		reg[rd] = 0;
+	                    	}
+	                        break;
+	                    case 0x4: // XORI - 100
+	                    		reg[rd] = reg[rs1] ^ iImm;
+	                        break;
+	                    case 0x6: // ORI - 110
+                    		reg[rd] = reg[rs1] | iImm;
+                        break;
+	                    case 0x7: // ANDI - 111
+                    		reg[rd] = reg[rs1] & iImm;
+                        break;
+	                    case 0x1: // SLLI - 001
+                    		reg[rd] = reg[rs1] << iImm;
+                        break;
+	                    case 0x5:
+	                    	switch (funct7) { 
+		                    	case 0x0: // SRLI - 0000000
+		                    		reg[rd] = reg[rs1] >>> iImm;
+		                        break;
+			                    case 0x20: // SRAI - 0100000
+		                    		reg[rd] = reg[rs1] >> iImm;
+		                        break;
+			                    default:
+			                        System.out.println("Funct7 "+funct7+" for opcode " + opcode + " not yet implemented");
+			                        break;
+	                    	}
+	                    default:
+	                        System.out.println("Funct3 "+funct3+" for opcode " + opcode + " not yet implemented");
+	                        break;
+                    }
                     break;
-                case 0x33: //ADD (51)
+                case 0x63: // Branches - 1100011
+                	switch (funct3) { 
+	                	case 0x0: // BEQ - 000
+	                		if (reg[rs1] == reg[rs2]) {
+	                			//!!!!!
+	                		}
+	                    break;
+	                    default:
+	                        System.out.println("Funct7 "+funct7+" for opcode " + opcode + " not yet implemented");
+	                        break;
+                	}
+                	break;
+                case 0x33: // ADD (51)
                 	reg[rd] = reg[rs1] + reg[rs2];
                 	break;
                 default:
@@ -76,7 +143,66 @@ public class Main {
         }
 
         System.out.println("Program exit");
+        
+        binaryDumpToFile();
 
+    }
+    
+    //https://attacomsian.com/blog/java-read-write-binary-files
+    public static void loadProgramFromFile() {
+    	try {
+    	    // create a reader
+    	    FileInputStream fis = new FileInputStream(new File("input.dat"));
+    	    BufferedInputStream reader = new BufferedInputStream(fis);
+
+    	    // read one byte at a time
+    	    int ch;
+    	    while ((ch = reader.read()) != -1) {
+    	        System.out.print((char) ch);
+    	    }
+
+    	    // close the reader
+    	    reader.close();
+
+    	} catch (IOException ex) {
+    	    ex.printStackTrace();
+    	}
+    }
+    
+    public static void binaryDumpToFile() {
+    	try {
+    	    // create a writer
+    	    FileOutputStream fos = new FileOutputStream(new File("output.bin"));
+    	    BufferedOutputStream writer = new BufferedOutputStream(fos);
+    	    
+    	    for (int i = 0; i < reg.length; ++i) {
+    	    	for (int x = 0; x < 4; x++) {
+    	    		writer.write((byte) ((reg[i] >> 8 * x) & 0xff));
+    	    		System.out.print((byte) ((reg[i] >> 8 * x) & 0xff));
+    				//writer.write(reg[i]);
+    	    	}
+    	    	System.out.println();
+            }
+    	    
+    	    11111010 10101010 10101010 10101010
+    	    11111010 10101010 10101010 10101010
+    	    00000000 00000000 00000000 11111111
+    	    00000000 00000000 00000000 10101010
+    	    
+    	    11111010 10101010 10101010 10101010
+    	    00000000 11111010 10101010 10101010
+    	    00000000 00000000 00000000 11111111
+    	    00000000 00000000 00000000 10101010
+
+    	    // flush remaining bytes
+    	    writer.flush();
+    	    
+    	    // close the writer
+    	    writer.close();
+
+    	} catch (IOException ex) {
+    	    ex.printStackTrace();
+    	}
     }
 
 }
