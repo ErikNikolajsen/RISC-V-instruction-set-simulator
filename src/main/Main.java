@@ -172,28 +172,38 @@ public class Main {
     public static void binaryDumpToFile() {
     	try {
     	    // create a writer
-    	    FileOutputStream fos = new FileOutputStream(new File("output.bin"));
+    	    FileOutputStream fos = new FileOutputStream(new File("output.res"));
     	    BufferedOutputStream writer = new BufferedOutputStream(fos);
     	    
     	    for (int i = 0; i < reg.length; ++i) {
     	    	for (int x = 0; x < 4; x++) {
-    	    		writer.write((byte) ((reg[i] >> 8 * x) & 0xff));
-    	    		System.out.print((byte) ((reg[i] >> 8 * x) & 0xff));
-    				//writer.write(reg[i]);
+    	    		writer.write((reg[i] >> 8 * x) & 0xff);
     	    	}
-    	    	System.out.println();
             }
     	    
-    	    11111010 10101010 10101010 10101010
-    	    11111010 10101010 10101010 10101010
-    	    00000000 00000000 00000000 11111111
-    	    00000000 00000000 00000000 10101010
+    	    
+    	    /*
+    	    11111010 10101010 10101010 10101010 Initial state
+    	    11111010 10101010 10101010 10101010 After bit shift
+    	    00000000 00000000 00000000 11111111 Bit mask
+    	    00000000 00000000 00000000 10101010 Final byte
     	    
     	    11111010 10101010 10101010 10101010
     	    00000000 11111010 10101010 10101010
     	    00000000 00000000 00000000 11111111
     	    00000000 00000000 00000000 10101010
-
+    	    
+    	    11111010 10101010 10101010 10101010
+    	    00000000 00000000 11111010 10101010
+    	    00000000 00000000 00000000 11111111
+    	    00000000 00000000 00000000 10101010
+    	    
+    	    11111010 10101010 10101010 10101010
+    	    00000000 00000000 00000000 11111010
+    	    00000000 00000000 00000000 11111111
+    	    00000000 00000000 00000000 11111010
+    	    */
+    	    
     	    // flush remaining bytes
     	    writer.flush();
     	    
@@ -201,7 +211,7 @@ public class Main {
     	    writer.close();
 
     	} catch (IOException ex) {
-    	    ex.printStackTrace();
+    	    System.out.println("Binary dump failure");
     	}
     }
 
