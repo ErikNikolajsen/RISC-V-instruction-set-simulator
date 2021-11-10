@@ -6,97 +6,85 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class Main {
 
     static int pc;
     static int[] reg = new int[32];
-
-    // Here the first program hard coded as an array
-    static int[] progr = {
-            0x00200093, // addi x1 x0 2 (1000000000000010010011)
-            0x00300113, // addi x2 x0 3
-            0x002081b3, // add x3 x1 x2
-    };
+    static int[] progr;
 
     public static void main(String[] args) {
 
         pc = 0;
         
-        loadProgramFromFile(); //test
-        
-        
+        progr = loadProgramFromFile(new File("./tests/task1/addlarge.bin")); //test
 
         for (;;) {
 
             int instr = progr[pc >> 2]; //divide by 4
-            int opcode = instr & 0x7f;
-            int rd = (instr >> 7) & 0x01f;
-            int rs1 = (instr >> 15) & 0x01f;
-            int rs2 = (instr >> 20) & 0x01f;
-            int iImm = (instr >> 20);
-            int uImm = (instr >> 12);
-            int jImm1 = (instr >> 31) & 0x1;
-            int jImm2 = (instr >> 21) & 0x3FF;
-            int jImm3 = (instr >> 20) & 0x1;
-            int jImm4 = (instr >> 12) & 0xFF;
+            int opcode = instr & 0x7F;
+            int rd = (instr >> 7) & 0x1F;
+            int rs1 = (instr >> 15) & 0x1F;
+            int rs2 = (instr >> 20) & 0x1F;
             int funct3 = (instr >> 12) & 0x7;
             int funct7 = (instr >> 25);
-            int sImm = (instr >> 25);
+            int immI = (instr >> 20);
+            int immS = ((instr >> 20) & 0xFE0) | ((instr >> 7) & 0x1F);
+            int immB = ((instr >> 7) & 0x1E) | ((instr >> 20) & 0x7E0) | ((instr << 4) & 0x800) | ((instr >> 19) & 0x1000);
+            int immU = instr & 0xFFFFF000;
+            int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 11) & 0x100000);
 
             switch (opcode) {
             	case 0x37: // LUI - Load upper immediate - 0110111 - 55 - U-type
-            		reg[rd] = uImm << 12;
+            		reg[rd] = immU << 12;
             		break;
             	case 0x17: // AUIPC - Add Upper Imm to PC - 0010111 - 23 - U-type //this sets rd to the sum of the current PC and a 32-bit value with the low 12 bits as 0 and the high 20 bits coming from the U-type immediate.
-            		reg[rd] = (uImm << 12) + pc;
+            		reg[rd] = (immU << 12) + pc;
             		break;
             	case 0x6F: // JAL - Jump & Link - 1101111 - 111 - J-type
             		reg[rd] = pc+4;
-            		pc += ((((((jImm1 << 8) | jImm4) << 1) | jImm3) << 10) | jImm2) * 4;
+            		pc += immJ * 4;
             	case 0x67: // JALR - Jump & Link Register - 1100111 - 103 - I-type
             		reg[rd] = pc+4;
-            		pc = (iImm + rs1) & 0xFFFFFFFE;  
+            		pc = (immI + rs1) & 0xFFFFFFFE;  
                 case 0x13: // Immediate calculations - I-Type
                 	switch (funct3) {  
 	                    case 0x0: // ADDI - Add Immediate - 000
-	                        reg[rd] = reg[rs1] + iImm;
+	                        reg[rd] = reg[rs1] + immI;
 	                        break;
 	                    case 0x2: // SLTI - 010
-	                    	if (reg[rs1] < iImm) {
+	                    	if (reg[rs1] < immI) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
 	                    case 0x3: // SLTIU - 011
-	                    	if (reg[rs1] < (iImm>>>20)) {
+	                    	if (reg[rs1] < (immI>>>20)) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
 	                    case 0x4: // XORI - 100
-	                    		reg[rd] = reg[rs1] ^ iImm;
+	                    		reg[rd] = reg[rs1] ^ immI;
 	                        break;
 	                    case 0x6: // ORI - 110
-                    		reg[rd] = reg[rs1] | iImm;
+                    		reg[rd] = reg[rs1] | immI;
                         break;
 	                    case 0x7: // ANDI - 111
-                    		reg[rd] = reg[rs1] & iImm;
+                    		reg[rd] = reg[rs1] & immI;
                         break;
 	                    case 0x1: // SLLI - 001
-                    		reg[rd] = reg[rs1] << iImm;
+                    		reg[rd] = reg[rs1] << immI;
                         break;
 	                    case 0x5:
 	                    	switch (funct7) { 
 		                    	case 0x0: // SRLI - 0000000
-		                    		reg[rd] = reg[rs1] >>> iImm;
+		                    		reg[rd] = reg[rs1] >>> immI;
 		                        break;
 			                    case 0x20: // SRAI - 0100000
-		                    		reg[rd] = reg[rs1] >> iImm;
+		                    		reg[rd] = reg[rs1] >> immI;
 		                        break;
 			                    default:
 			                        System.out.println("Funct7 "+funct7+" for opcode " + opcode + " not yet implemented");
@@ -156,47 +144,30 @@ public class Main {
 		
     }
     
-    public static void loadProgramFromFile() {
+    public static int[] loadProgramFromFile(File file) {
     	try {
     	    // create a reader
-    	    FileInputStream fis = new FileInputStream(new File("./tests/task1/addlarge.bin"));
+    	    FileInputStream fis = new FileInputStream(file);
     	    BufferedInputStream reader = new BufferedInputStream(fis);
 
     	    // set program memory to size of program
-    	    progr = new int[reader.available()];
+    	    int[] input = new int[reader.available()];
     	    
     	    // read bytes into program memory as 32-bit instructions
     	    for (int i = 0; i < reader.available(); i++) {
     	    	for (int j = 0; j < 4; j++) {
-		    		progr[i] = (reader.read() << 8 * j) | progr[i];
+    	    		input[i] = (reader.read() << 8 * j) | input[i];
 	    	    }
 	    	}
     	    
-//    	    00000000 00000000 00000000 00000000 Initial state
-//    	    00000000 00000000 00000000 00000000 After bit shift
-//    	    00000000 00000000 00000000 11110000 New value
-//    	    00000000 00000000 00000000 11110000 After bitwise OR operation
-//    	    
-//    	    00000000 00000000 00000000 11110000
-//    	    00000000 00000000 11110000 00000000
-//    	    00000000 00000000 00000000 00001111
-//    	    00000000 00000000 11110000 00001111
-//    	    
-//    	    00000000 00000000 11110000 00001111
-//    	    00000000 11110000 00001111 00000000
-//    	    00000000 00000000 00000000 00111100
-//    	    00000000 11110000 00001111 00111100
-//    	    
-//    	    00000000 11110000 00001111 00111100
-//    	    11110000 00001111 00111100 00000000
-//    	    00000000 00000000 00000000 11000011
-//    	    11110000 00001111 00111100 11000011
-
     	    // close the reader
     	    reader.close();
+    	    
+    	    return input;
 
     	} catch (IOException ex) {
     	    ex.printStackTrace();
+    	    return new int[0];
     	}
     }
     
@@ -214,26 +185,6 @@ public class Main {
     	    	}
             }
     	    
-//    	    11110000 00001111 00111100 11000011 Initial state
-//    	    11110000 00001111 00111100 11000011 After bit shift
-//    	    00000000 00000000 00000000 11111111 Bit mask
-//    	    00000000 00000000 00000000 11000011 Final byte
-//    	    
-//    	    11110000 00001111 00111100 11000011
-//    	    00000000 11110000 00001111 00111100
-//    	    00000000 00000000 00000000 11111111
-//    	    00000000 00000000 00000000 00111100
-//    	    
-//    	    11110000 00001111 00111100 11000011
-//    	    00000000 00000000 11110000 00001111
-//    	    00000000 00000000 00000000 11111111
-//    	    00000000 00000000 00000000 00001111
-//    	    
-//    	    11110000 00001111 00111100 11000011
-//    	    00000000 00000000 00000000 11110000
-//    	    00000000 00000000 00000000 11111111
-//    	    00000000 00000000 00000000 11110000
-    	    
     	    // flush remaining bytes
     	    writer.flush();
     	    
@@ -246,5 +197,32 @@ public class Main {
     	    //System.out.println("Binary dump failure");
     	}
     }
-
+    
+    String[] task1 = new String[] {
+		"addlarge",
+		"addneg",
+		"addpos",
+		"bool",
+		"set",
+		"shift",
+		"shift2"
+	};
+	
+	String[] task2 = new String[] {
+		"branchcnt",
+		"branchmany",
+		"branchtrap"
+	};
+	
+	String[] task3 = new String[] {
+		"loop",
+		"recursive",
+		"string",
+		"width"
+	};
+	/*
+	public void testProcessor() {
+		Main.loadProgramFromFile("./tests/task1/addlarge.bin").equals(main.reg);
+	}
+	*/
 }
