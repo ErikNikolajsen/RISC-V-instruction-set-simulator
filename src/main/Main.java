@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Main {
 
@@ -21,9 +23,9 @@ public class Main {
 
     public static void main(String[] args) {
 
-        System.out.println("Hello RISC-V World!");
-
         pc = 0;
+        
+        loadProgramFromFile(); //test
         
         
 
@@ -144,22 +146,51 @@ public class Main {
 
         System.out.println("Program exit");
         
-        binaryDumpToFile();
-
+        
+        
+        binaryDumpToFile(); //test
+        
+        //long startTime = System.currentTimeMillis();
+        //long estimatedTime = System.currentTimeMillis() - startTime;
+        //System.out.println(estimatedTime); //test
+		
     }
     
-    //https://attacomsian.com/blog/java-read-write-binary-files
     public static void loadProgramFromFile() {
     	try {
     	    // create a reader
-    	    FileInputStream fis = new FileInputStream(new File("input.dat"));
+    	    FileInputStream fis = new FileInputStream(new File("./tests/task1/addlarge.bin"));
     	    BufferedInputStream reader = new BufferedInputStream(fis);
 
-    	    // read one byte at a time
-    	    int ch;
-    	    while ((ch = reader.read()) != -1) {
-    	        System.out.print((char) ch);
-    	    }
+    	    // set program memory to size of program
+    	    progr = new int[reader.available()];
+    	    
+    	    // read bytes into program memory as 32-bit instructions
+    	    for (int i = 0; i < reader.available(); i++) {
+    	    	for (int j = 0; j < 4; j++) {
+		    		progr[i] = (reader.read() << 8 * j) | progr[i];
+	    	    }
+	    	}
+    	    
+//    	    00000000 00000000 00000000 00000000 Initial state
+//    	    00000000 00000000 00000000 00000000 After bit shift
+//    	    00000000 00000000 00000000 11110000 New value
+//    	    00000000 00000000 00000000 11110000 After bitwise OR operation
+//    	    
+//    	    00000000 00000000 00000000 11110000
+//    	    00000000 00000000 11110000 00000000
+//    	    00000000 00000000 00000000 00001111
+//    	    00000000 00000000 11110000 00001111
+//    	    
+//    	    00000000 00000000 11110000 00001111
+//    	    00000000 11110000 00001111 00000000
+//    	    00000000 00000000 00000000 00111100
+//    	    00000000 11110000 00001111 00111100
+//    	    
+//    	    00000000 11110000 00001111 00111100
+//    	    11110000 00001111 00111100 00000000
+//    	    00000000 00000000 00000000 11000011
+//    	    11110000 00001111 00111100 11000011
 
     	    // close the reader
     	    reader.close();
@@ -171,47 +202,48 @@ public class Main {
     
     public static void binaryDumpToFile() {
     	try {
+    		
     	    // create a writer
-    	    FileOutputStream fos = new FileOutputStream(new File("output.res"));
+    	    FileOutputStream fos = new FileOutputStream(new File("output"));
     	    BufferedOutputStream writer = new BufferedOutputStream(fos);
     	    
-    	    for (int i = 0; i < reg.length; ++i) {
-    	    	for (int x = 0; x < 4; x++) {
-    	    		writer.write((reg[i] >> 8 * x) & 0xff);
+    	    // write integers as 32-bit binary
+    	    for (int i = 0; i < 32; ++i) {
+    	    	for (int j = 0; j < 4; j++) {
+    	    		writer.write((reg[i] >> 8 * j) & 0xff);
     	    	}
             }
     	    
-    	    
-    	    /*
-    	    11111010 10101010 10101010 10101010 Initial state
-    	    11111010 10101010 10101010 10101010 After bit shift
-    	    00000000 00000000 00000000 11111111 Bit mask
-    	    00000000 00000000 00000000 10101010 Final byte
-    	    
-    	    11111010 10101010 10101010 10101010
-    	    00000000 11111010 10101010 10101010
-    	    00000000 00000000 00000000 11111111
-    	    00000000 00000000 00000000 10101010
-    	    
-    	    11111010 10101010 10101010 10101010
-    	    00000000 00000000 11111010 10101010
-    	    00000000 00000000 00000000 11111111
-    	    00000000 00000000 00000000 10101010
-    	    
-    	    11111010 10101010 10101010 10101010
-    	    00000000 00000000 00000000 11111010
-    	    00000000 00000000 00000000 11111111
-    	    00000000 00000000 00000000 11111010
-    	    */
+//    	    11110000 00001111 00111100 11000011 Initial state
+//    	    11110000 00001111 00111100 11000011 After bit shift
+//    	    00000000 00000000 00000000 11111111 Bit mask
+//    	    00000000 00000000 00000000 11000011 Final byte
+//    	    
+//    	    11110000 00001111 00111100 11000011
+//    	    00000000 11110000 00001111 00111100
+//    	    00000000 00000000 00000000 11111111
+//    	    00000000 00000000 00000000 00111100
+//    	    
+//    	    11110000 00001111 00111100 11000011
+//    	    00000000 00000000 11110000 00001111
+//    	    00000000 00000000 00000000 11111111
+//    	    00000000 00000000 00000000 00001111
+//    	    
+//    	    11110000 00001111 00111100 11000011
+//    	    00000000 00000000 00000000 11110000
+//    	    00000000 00000000 00000000 11111111
+//    	    00000000 00000000 00000000 11110000
     	    
     	    // flush remaining bytes
     	    writer.flush();
     	    
     	    // close the writer
     	    writer.close();
+    	    
 
     	} catch (IOException ex) {
-    	    System.out.println("Binary dump failure");
+    		ex.printStackTrace();
+    	    //System.out.println("Binary dump failure");
     	}
     }
 
