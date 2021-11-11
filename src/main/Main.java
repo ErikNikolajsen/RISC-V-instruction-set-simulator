@@ -14,10 +14,27 @@ public class Main {
     static int[] progr;
 
     public static void main(String[] args) {
+    	runProcessor(new File("./tests/task1/addlarge.bin"));
+    }
+    
+    
+    
+    public static int[] getProgr() {
+		return progr;
+	}
 
-        pc = 0;
-        
-        progr = loadProgramFromFile(new File("./tests/task1/addlarge.bin")); //test
+
+
+	public static int[] getReg() {
+		return reg;
+	}
+
+
+
+	public static void runProcessor(File inputFile) {
+    	
+		pc = 0;
+        progr = loadProgramFromFile(inputFile); //test
 
         for (;;) {
 
@@ -29,85 +46,155 @@ public class Main {
             int funct3 = (instr >> 12) & 0x7;
             int funct7 = (instr >> 25);
             int immI = (instr >> 20);
-            int immS = ((instr >> 20) & 0xFE0) | ((instr >> 7) & 0x1F);
-            int immB = ((instr >> 7) & 0x1E) | ((instr >> 20) & 0x7E0) | ((instr << 4) & 0x800) | ((instr >> 19) & 0x1000);
+            int immS = ((instr >> 25) << 5) | ((instr >> 7) & 0x1F);
+            int immB = ((instr >> 7) & 0x1E) | ((instr >> 20) & 0x7E0) | ((instr << 4) & 0x800) | ((instr >> 31) << 11);
             int immU = instr & 0xFFFFF000;
-            int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 11) & 0x100000);
+            int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 31) << 19);
 
             switch (opcode) {
-            	case 0x37: // LUI - Load upper immediate - 0110111 - 55 - U-type
-            		reg[rd] = immU << 12;
+            	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
+            		reg[rd] = immU;
             		break;
-            	case 0x17: // AUIPC - Add Upper Imm to PC - 0010111 - 23 - U-type //this sets rd to the sum of the current PC and a 32-bit value with the low 12 bits as 0 and the high 20 bits coming from the U-type immediate.
-            		reg[rd] = (immU << 12) + pc;
+            	case 0x17: // AUIPC (add upper immediate to PC). Is used to build pc-relative addresses and uses the U-type format. AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling in the lowest 12 bits with zeros, adds this offset to the address of the AUIPC instruction, then places the result in register rd.
+            		reg[rd] = immU + pc;
             		break;
             	case 0x6F: // JAL - Jump & Link - 1101111 - 111 - J-type
             		reg[rd] = pc+4;
             		pc += immJ * 4;
+            		break;
             	case 0x67: // JALR - Jump & Link Register - 1100111 - 103 - I-type
             		reg[rd] = pc+4;
-            		pc = (immI + rs1) & 0xFFFFFFFE;  
-                case 0x13: // Immediate calculations - I-Type
+            		pc = (immI + rs1) & 0xFFFFFFFE;
+            		break;
+            	case 0x63: // BEQ/BNE/BLT/BGE/BLTU/BGEU
+            		// NOT YET IMPLEMENTED
+            		break;
+            	case 0x3: // LB/LH/LW/LBU/LHU
+            		// NOT YET IMPLEMENTED
+            		break;
+            	case 0x23: // SB/SH/SW
+            		// NOT YET IMPLEMENTED
+            		break;
+                case 0x13: // ADDI/SLTI/SLTIU/XORI/ORI/ANDI/SLLI/SRLI/SRAI
+                	
                 	switch (funct3) {  
-	                    case 0x0: // ADDI - Add Immediate - 000
+	                    case 0x0: // ADDI (add Immediate). ADDI adds the sign-extended 12-bit immediate to register rs1. Arithmetic overflow is ignored and the result is simply the low XLEN bits of the result. ADDI rd, rs1, 0 is used to implement the MV rd, rs1 assembler pseudoinstruction.
 	                        reg[rd] = reg[rs1] + immI;
 	                        break;
-	                    case 0x2: // SLTI - 010
+	                    case 0x2: // SLTI (set less than immediate). Places the value 1 in register rd if register rs1 is less than the sign-extended immediate when both are treated as signed numbers, else 0 is written to rd.
 	                    	if (reg[rs1] < immI) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
-	                    case 0x3: // SLTIU - 011
-	                    	if (reg[rs1] < (immI>>>20)) {
+	                    case 0x3: // SLTIU (set less than immediate unsigned). SLTIU is similar but compares the values as unsigned numbers (i.e., the immediate is first sign-extended to XLEN bits then treated as an unsigned number). Note, SLTIU rd, rs1, 1 sets rd to 1 if rs1 equals zero, otherwise sets rd to 0 (assembler pseudoinstruction SEQZ rd, rs).
+	                    	if (reg[rs1] < (immI & 0xFFF)) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
-	                    case 0x4: // XORI - 100
+	                    case 0x4: // XORI (exclusive or immediate). ANDI, ORI, XORI are logical operations that perform bitwise AND, OR, and XOR on register rs1 and the sign-extended 12-bit immediate and place the result in rd. Note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudoinstruction NOT rd, rs).
 	                    		reg[rd] = reg[rs1] ^ immI;
 	                        break;
-	                    case 0x6: // ORI - 110
+	                    case 0x6: // ORI (or immediate)
                     		reg[rd] = reg[rs1] | immI;
-                        break;
-	                    case 0x7: // ANDI - 111
+                    		break;
+	                    case 0x7: // ANDI (and immediate)
                     		reg[rd] = reg[rs1] & immI;
-                        break;
-	                    case 0x1: // SLLI - 001
+                    		break;
+	                    case 0x1: // SLLI (shift left logical immediate).  SLLI is a logical left shift (zeros are shifted into the lower bits).
                     		reg[rd] = reg[rs1] << immI;
-                        break;
+                    		break;
 	                    case 0x5:
+	                    	
 	                    	switch (funct7) { 
-		                    	case 0x0: // SRLI - 0000000
+		                    	case 0x0: // SRLI (shift right logical immediate). SRLI is a logical right shift (zeros are shifted into the upper bits).
 		                    		reg[rd] = reg[rs1] >>> immI;
-		                        break;
-			                    case 0x20: // SRAI - 0100000
+		                        	break;
+			                    case 0x20: // SRAI (shift right arithmetic immediate). SRAI is an arithmetic right shift (the original sign bit is copied into the vacated upper bits).
 		                    		reg[rd] = reg[rs1] >> immI;
-		                        break;
+		                        	break;
 			                    default:
-			                        System.out.println("Funct7 "+funct7+" for opcode " + opcode + " not yet implemented");
+			                        System.out.println("Funct7 " + funct7 + " for Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
 			                        break;
 	                    	}
+	                    	break;
+	                    	
 	                    default:
-	                        System.out.println("Funct3 "+funct3+" for opcode " + opcode + " not yet implemented");
+	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
 	                        break;
                     }
                     break;
-                case 0x63: // Branches - 1100011
+                
+                case 0x33: // ADD/SUB/SLL/SLT/SLTU/XOR/SRL/SRA/OR/AND
+                	
                 	switch (funct3) { 
-	                	case 0x0: // BEQ - 000
-	                		if (reg[rs1] == reg[rs2]) {
-	                			//!!!!!
+	                	case 0x0: // ADD/SUB
+	                		
+	                		switch (funct7) { 
+			                	case 0x0: // ADD (addition). ADD performs the addition of rs1 and rs2. Overflows are ignored and the low XLEN bits of results are written to the destination rd.
+			                		reg[rd] = reg[rs1] + reg[rs2];
+			                		break;
+			                	case 0x20: // SUB (subtraction). SUB performs the subtraction of rs2 from rs1. Overflows are ignored and the low XLEN bits of results are written to the destination rd.
+			                		reg[rd] = reg[rs1] - reg[rs2];
+			                		break;
+			                	default:
+			                        System.out.println("Funct7 " + funct7 + " for Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
+			                        break;
+			            	}
+			            	break;
+			            
+	                	case 0x1: // SLL (logical left shift). SLL perform logical left shift on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+	                		reg[rd] = reg[rs1] << reg[rs2];
+	                		break;
+	                	case 0x2: // SLT (set if less than). SLT perform signed compares, writing 1 to rd if rs1 < rs2, 0 otherwise.
+	                		if (reg[rs1] < reg[rs2]) {
+	                			reg[rd] = 1;
+	                		} else {
+	                			reg[rs1] = 0;
 	                		}
-	                    break;
-	                    default:
-	                        System.out.println("Funct7 "+funct7+" for opcode " + opcode + " not yet implemented");
+	                		break;
+	                	case 0x3: // SLTU (set if less than unsigned). SLTU perform unsigned compares, writing 1 to rd if rs1 < rs2, 0 otherwise. Note, SLTU rd, x0, rs2 sets rd to 1 if rs2 is not equal to zero, otherwise sets rd to zero (assembler pseudoinstruction SNEZ rd, rs).
+	                		if (reg[rs1] < reg[rs2 & 0x1F]) {
+	                			reg[rd] = 1;
+	                		} else {
+	                			reg[rs1] = 0;
+	                		}
+	                		break;
+	                	case 0x4: // XOR (bitwise exclusive or)
+	                		reg[rd] = reg[rs1] ^ reg[rs2]; 
+	                		break;
+	                	case 0x5: // SRL/SRA
+	                		
+	                		switch (funct7) { 
+			                	case 0x0: // SRL (shift right logical). SRL perform logical right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+			                		reg[rd] = reg[rs1] >>> reg[rs1];
+			                		break;
+			                	case 0x20: // SRA (shift right arithmetic). SRA perform arithmetic right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+			                		reg[rd] = reg[rs1] >> reg[rs1];
+			                		break;
+			                	default:
+			                        System.out.println("Funct7 " + funct7 + " for Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
+			                        break;
+			            	}
+			            	break;
+	                	
+	                	case 0x6: // OR (bitwise or)
+	                		reg[rd] = reg[rs1] | reg[rs2];
+	                		break;
+	                	case 0x7: // AND (bitwise and)
+	                		reg[rd] = reg[rs1] & reg[rs2];
+	                		break;
+	                	default:
+	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
 	                        break;
-                	}
-                	break;
-                case 0x33: // ADD (51)
+	                		
+	            	}
+	            	break;
+                	
+                case 0x73: // ECALL - Environment call
                 	reg[rd] = reg[rs1] + reg[rs2];
                 	break;
                 default:
@@ -141,7 +228,6 @@ public class Main {
         //long startTime = System.currentTimeMillis();
         //long estimatedTime = System.currentTimeMillis() - startTime;
         //System.out.println(estimatedTime); //test
-		
     }
     
     public static int[] loadProgramFromFile(File file) {
@@ -151,10 +237,10 @@ public class Main {
     	    BufferedInputStream reader = new BufferedInputStream(fis);
 
     	    // set program memory to size of program
-    	    int[] input = new int[reader.available()];
+    	    int[] input = new int[reader.available() >> 2];
     	    
     	    // read bytes into program memory as 32-bit instructions
-    	    for (int i = 0; i < reader.available(); i++) {
+    	    for (int i = 0; i < input.length; i++) {
     	    	for (int j = 0; j < 4; j++) {
     	    		input[i] = (reader.read() << 8 * j) | input[i];
 	    	    }
@@ -163,9 +249,14 @@ public class Main {
     	    // close the reader
     	    reader.close();
     	    
+//    	    for (int i : input) {
+//    	    	System.out.println(i);
+//    	    }
+    	    
     	    return input;
 
     	} catch (IOException ex) {
+    		System.out.println("Program load failure");
     	    ex.printStackTrace();
     	    return new int[0];
     	}
@@ -175,7 +266,7 @@ public class Main {
     	try {
     		
     	    // create a writer
-    	    FileOutputStream fos = new FileOutputStream(new File("output"));
+    	    FileOutputStream fos = new FileOutputStream(new File("output.res"));
     	    BufferedOutputStream writer = new BufferedOutputStream(fos);
     	    
     	    // write integers as 32-bit binary
@@ -193,36 +284,11 @@ public class Main {
     	    
 
     	} catch (IOException ex) {
+    		System.out.println("Binary dump failure");
     		ex.printStackTrace();
-    	    //System.out.println("Binary dump failure");
     	}
     }
     
-    String[] task1 = new String[] {
-		"addlarge",
-		"addneg",
-		"addpos",
-		"bool",
-		"set",
-		"shift",
-		"shift2"
-	};
-	
-	String[] task2 = new String[] {
-		"branchcnt",
-		"branchmany",
-		"branchtrap"
-	};
-	
-	String[] task3 = new String[] {
-		"loop",
-		"recursive",
-		"string",
-		"width"
-	};
-	/*
-	public void testProcessor() {
-		Main.loadProgramFromFile("./tests/task1/addlarge.bin").equals(main.reg);
-	}
-	*/
+    
+
 }
