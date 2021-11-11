@@ -10,7 +10,7 @@ import java.io.IOException;
 public class Main {
 
     static int pc;
-    static int[] reg = new int[32];
+    static int[] reg;
     static int[] progr;
 
     public static void main(String[] args) {
@@ -34,6 +34,7 @@ public class Main {
 	public static void runProcessor(File inputFile) {
     	
 		pc = 0;
+		reg = new int[32];
         progr = loadProgramFromFile(inputFile); //test
 
         for (;;) {
@@ -170,10 +171,10 @@ public class Main {
 	                		
 	                		switch (funct7) { 
 			                	case 0x0: // SRL (shift right logical). SRL perform logical right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
-			                		reg[rd] = reg[rs1] >>> reg[rs1];
+			                		reg[rd] = reg[rs1] >>> reg[rs2];
 			                		break;
 			                	case 0x20: // SRA (shift right arithmetic). SRA perform arithmetic right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
-			                		reg[rd] = reg[rs1] >> reg[rs1];
+			                		reg[rd] = reg[rs1] >> reg[rs2];
 			                		break;
 			                	default:
 			                        System.out.println("Funct7 " + funct7 + " for Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
@@ -195,8 +196,20 @@ public class Main {
 	            	break;
                 	
                 case 0x73: // ECALL - Environment call
-                	reg[rd] = reg[rs1] + reg[rs2];
-                	break;
+                	
+                	switch (reg[17]) { 
+	                	case 0x0: // print_int - Prints the value located in a0 as a signed integer
+	                		System.out.print(reg[10]);
+	                		break;
+	                	case 0xA: // exit - Halts the simulator
+	                		pc = progr.length * 4;
+	                		break;
+	                	default:
+	                        System.out.println("a7 " + reg[17] + " for Opcode " + opcode + " not yet implemented");
+	                        break;
+	            	}
+	            	break;
+                	
                 default:
                     System.out.println("Opcode " + opcode + " not yet implemented");
                     break;
