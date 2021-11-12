@@ -12,6 +12,7 @@ public class Main {
     static int pc;
     static int[] reg;
     static int[] progr;
+    static int[] memory;
 
     public static void main(String[] args) {
     	runProcessor(new File("./tests/task1/addlarge.bin"));
@@ -36,6 +37,7 @@ public class Main {
 		pc = 0;
 		reg = new int[32];
         progr = loadProgramFromFile(inputFile); //test
+        memory = new int[1000000]; // 1 MB memory
         
         boolean branch = false;
 
@@ -67,13 +69,11 @@ public class Main {
             		reg[rd] = pc + 4;
             		pc += immJ;
             		branch = true;
-            		System.out.print("JAL "); //TEST
             		break;
             	case 0x67: // JALR (jump & link register). JALR saves the next address (program counter +4) to the destination register, adds the immediate value encoded in the instruction to the source register, and jumps to that (even) address.
             		reg[rd] = pc + 4;
             		pc = rs1 + immI;
             		branch = true;
-            		System.out.print("JALR "); //TEST
             		break;
             	case 0x63: // BEQ/BNE/BLT/BGE/BLTU/BGEU
             		
@@ -83,43 +83,36 @@ public class Main {
 	                			pc += immB;
 	                			branch = true;
 	                		}
-	                		System.out.print("BEQ "); //TEST
 	                		break;
 	                	case 0x1: // BNE (branch if not equal). BNE take the branch if registers rs1 and rs2 are unequal.
 	                		if (reg[rs1] != reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
-	                			System.out.print("imm("+immB+") ");
 	                		}
-	                		System.out.print("BNE "); //TEST
 	                		break;
 	                	case 0x4: // BLT (branch if less than). BLT take the branch if rs1 is less than rs2, using signed comparison.
 	                		if (reg[rs1] < reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
-	                		System.out.print("BLT "); //TEST
 	                		break;
 	                	case 0x5: // BGE (branch if greater than or equal). BGE take the branch if rs1 is greater than or equal to rs2, using signed comparison.
 	                		if (reg[rs1] >= reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
-	                		System.out.print("BGE "); //TEST
 	                		break;
 	                	case 0x6: // BLTU (branch if less than unsigned). BLTU take the branch if rs1 is less than rs2, using unsigned comparison.
-	                		if ((reg[rs1] & 0x1F) < (reg[rs2] & 0x1F)) {
+	                		if ((reg[rs1] & 0xFFFFFFFFL) < (reg[rs2] & 0xFFFFFFFFL)) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
-	                		System.out.print("BLTU "); //TEST
 	                		break;
 	                	case 0x7: // BGEU (branch if greater than or equal). BGEU take the branch if rs1 is greater than or equal to rs2, using unsigned comparison.
-	                		if ((reg[rs1] & 0x1F) >= (reg[rs2] & 0x1F)) {
+	                		if ((reg[rs1] & 0xFFFFFFFFL) >= (reg[rs2] & 0xFFFFFFFFL)) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
-	                		System.out.print("BGEU "); //TEST
 	                		break;
 	                	default:
 	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
@@ -147,7 +140,7 @@ public class Main {
 	                    	}
 	                        break;
 	                    case 0x3: // SLTIU (set less than immediate unsigned). SLTIU is similar but compares the values as unsigned numbers (i.e., the immediate is first sign-extended to XLEN bits then treated as an unsigned number). Note, SLTIU rd, rs1, 1 sets rd to 1 if rs1 equals zero, otherwise sets rd to 0 (assembler pseudoinstruction SEQZ rd, rs).
-	                    	if (reg[rs1] < (immI & 0xFFF)) {
+	                    	if (reg[rs1] < (immI & 0xFFFFFFFFL)) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
@@ -215,7 +208,7 @@ public class Main {
 	                		}
 	                		break;
 	                	case 0x3: // SLTU (set if less than unsigned). SLTU perform unsigned compares, writing 1 to rd if rs1 < rs2, 0 otherwise. Note, SLTU rd, x0, rs2 sets rd to 1 if rs2 is not equal to zero, otherwise sets rd to zero (assembler pseudoinstruction SNEZ rd, rs).
-	                		if (reg[rs1] < reg[rs2 & 0x1F]) {
+	                		if (reg[rs1] < (reg[rs2] & 0xFFFFFFFFL)) {
 	                			reg[rd] = 1;
 	                		} else {
 	                			reg[rs1] = 0;
