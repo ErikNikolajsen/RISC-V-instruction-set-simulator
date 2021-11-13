@@ -40,6 +40,7 @@ public class Main {
         memory = new int[1000000]; // 1 MB memory
         
         boolean branch = false;
+        
 
         while(true) {
         	
@@ -57,6 +58,8 @@ public class Main {
             int immB = ((instr >> 7) & 0x1E) | ((instr >> 20) & 0x7E0) | ((instr << 4) & 0x800) | ((instr >> 31) << 12);
             int immU = instr & 0xFFFFF000;
             int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 31) << 19);
+            
+            reg[2] = memory.length;
 
             switch (opcode) {
             	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
@@ -121,11 +124,47 @@ public class Main {
 	            	break;
             		
             	case 0x3: // LB/LH/LW/LBU/LHU
-            		// NOT YET IMPLEMENTED
-            		break;
+            		
+            		switch (funct3) { 
+	                	case 0x0: // LB
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x1: // LH
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x2: // LW
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x4: // LBU
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x5: // LHU
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	default:
+	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
+	                        break;
+	            	}
+	            	break;
+            		
             	case 0x23: // SB/SH/SW
-            		// NOT YET IMPLEMENTED
-            		break;
+            		
+            		switch (funct3) { 
+	                	case 0x0: // SB
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x1: // SH
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	case 0x2: // SW
+	                		// NOT YET IMPLEMENTED
+	                		break;
+	                	default:
+	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
+	                        break;
+	            	}
+	            	break;
+            		
                 case 0x13: // ADDI/SLTI/SLTIU/XORI/ORI/ANDI/SLLI/SRLI/SRAI
                 	
                 	switch (funct3) {  
@@ -338,7 +377,7 @@ public class Main {
     	    BufferedOutputStream writer = new BufferedOutputStream(fos);
     	    
     	    // write integers as 32-bit binary
-    	    for (int i = 0; i < 32; ++i) {
+    	    for (int i = 0; i < reg.length; ++i) {
     	    	for (int j = 0; j < 4; j++) {
     	    		writer.write((reg[i] >> 8 * j) & 0xff);
     	    	}
