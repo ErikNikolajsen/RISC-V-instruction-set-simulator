@@ -16,13 +16,12 @@ public class Main {
 
     public static void main(String[] args) {
     	
-//    	File f = new File(args[0]);
-//    	if(f.exists() && !f.isDirectory()) { 
-//    	    // do something
-//    	}
+    	if (new File(args[0]).isFile() && args[1] != null) { 
+    		runProcessor(new File(args[0]), new File(args[1]));
+    	} else {
+    		System.out.println("Program file does not exist");
+    	}
 
-    	
-    	runProcessor(new File("./tests/task1/addlarge.bin"));
     }
     
     
@@ -39,7 +38,7 @@ public class Main {
 
 
 
-	public static void runProcessor(File inputFile) {
+	public static void runProcessor(File inputFile, File outputFile) {
     	
 		pc = 0;
 		reg = new int[32];
@@ -341,7 +340,7 @@ public class Main {
         
         
         
-        binaryDumpToFile(); //test
+        binaryDumpToFile(outputFile); //test
         
         //long startTime = System.currentTimeMillis();
         //long estimatedTime = System.currentTimeMillis() - startTime;
@@ -380,11 +379,11 @@ public class Main {
     	}
     }
     
-    public static void binaryDumpToFile() {
+    public static void binaryDumpToFile(File outputFile) {
     	try {
     		
     	    // create a writer
-    	    FileOutputStream fos = new FileOutputStream(new File("output.res"));
+    	    FileOutputStream fos = new FileOutputStream(outputFile);
     	    BufferedOutputStream writer = new BufferedOutputStream(fos);
     	    
     	    // write integers as 32-bit binary
