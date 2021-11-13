@@ -12,9 +12,16 @@ public class Main {
     static int pc;
     static int[] reg;
     static int[] progr;
-    static int[] memory;
+    static byte[] memory;
 
     public static void main(String[] args) {
+    	
+//    	File f = new File(args[0]);
+//    	if(f.exists() && !f.isDirectory()) { 
+//    	    // do something
+//    	}
+
+    	
     	runProcessor(new File("./tests/task1/addlarge.bin"));
     }
     
@@ -37,7 +44,7 @@ public class Main {
 		pc = 0;
 		reg = new int[32];
         progr = loadProgramFromFile(inputFile); //test
-        memory = new int[1000000]; // 1 MB memory
+        memory = new byte[1000000]; // 1 MB memory
         
         boolean branch = false;
         
@@ -59,7 +66,7 @@ public class Main {
             int immU = instr & 0xFFFFF000;
             int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 31) << 19);
             
-            reg[2] = memory.length;
+            //reg[2] = memory.length-1;
 
             switch (opcode) {
             	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
@@ -126,20 +133,20 @@ public class Main {
             	case 0x3: // LB/LH/LW/LBU/LHU
             		
             		switch (funct3) { 
-	                	case 0x0: // LB
-	                		// NOT YET IMPLEMENTED
+	                	case 0x0: // LB (load byte). LB and LBU are defined analogously for 8-bit values.
+	                		reg[rd] = memory[reg[rs1] + immI];
 	                		break;
-	                	case 0x1: // LH
-	                		// NOT YET IMPLEMENTED
+	                	case 0x1: // LH (load halfword). LH loads a 16-bit value from memory, then sign-extends to 32-bits before storing in rd.
+	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | (memory[reg[rs1] + immI + 1] << 8);
 	                		break;
-	                	case 0x2: // LW
-	                		// NOT YET IMPLEMENTED
+	                	case 0x2: // LW (load word). The LW instruction loads a 32-bit value from memory into rd.
+	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | ((memory[reg[rs1] + immI + 1] & 0xff) << 8) | ((memory[reg[rs1] + immI + 2] & 0xff) << 16) | (memory[reg[rs1] + immI + 3] << 24);
 	                		break;
-	                	case 0x4: // LBU
-	                		// NOT YET IMPLEMENTED
+	                	case 0x4: // LBU (load byte unsigned). LB and LBU are defined analogously for 8-bit values.
+	                		reg[rd] = memory[reg[rs1] + immI] & 0xff;
 	                		break;
-	                	case 0x5: // LHU
-	                		// NOT YET IMPLEMENTED
+	                	case 0x5: // LHU (load half unsigned). LHU loads a 16-bit value from memory but then zero extends to 32-bits before storing in rd.
+	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | ((memory[reg[rs1] + immI + 1] & 0xff) << 8);
 	                		break;
 	                	default:
 	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
@@ -150,14 +157,18 @@ public class Main {
             	case 0x23: // SB/SH/SW
             		
             		switch (funct3) { 
-	                	case 0x0: // SB
-	                		// NOT YET IMPLEMENTED
+	                	case 0x0: // SB (store byte). The SB instruction store a 8-bit value from the low bits of register rs2 to memory.
+	                		memory[reg[rs1] + immS] = (byte) (reg[rs2]);
 	                		break;
-	                	case 0x1: // SH
-	                		// NOT YET IMPLEMENTED
+	                	case 0x1: // SH (store halfword). The SH instructions store a 16-bit value from the low bits of register rs2 to memory.
+	                		memory[reg[rs1] + immS] = (byte) (reg[rs2] & 0xff);
+	                		memory[reg[rs1] + immS + 1] = (byte) ((reg[rs2] >> 8) & 0xff);
 	                		break;
-	                	case 0x2: // SW
-	                		// NOT YET IMPLEMENTED
+	                	case 0x2: // SW (store word). The SW instructions store a 32-bit value from the low bits of register rs2 to memory.
+	                		memory[reg[rs1] + immS] = (byte) (reg[rs2] & 0xff);
+	                		memory[reg[rs1] + immS + 1] = (byte) ((reg[rs2] >> 8) & 0xff);
+	                		memory[reg[rs1] + immS + 2] = (byte) ((reg[rs2] >> 16) & 0xff);
+	                		memory[reg[rs1] + immS + 3] = (byte) ((reg[rs2] >> 24) & 0xff);
 	                		break;
 	                	default:
 	                        System.out.println("Funct3 " + funct3 + " for Opcode " + opcode + " not yet implemented");
