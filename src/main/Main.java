@@ -17,42 +17,46 @@ public class Main {
     public static void main(String[] args) {
     	
     	if (new File(args[0]).isFile() && args[1] != null) { 
-    		runProcessor(new File(args[0]), new File(args[1]));
+    		runProcessor(new File(args[0]));
     	} else {
     		System.out.println("Program file does not exist");
     	}
 
     }
     
-    
-    
-    public static int[] getProgr() {
-		return progr;
-	}
-
-
-
+    // This getter is used for unit tests
 	public static int[] getReg() {
 		return reg;
 	}
 
-
-
-	public static void runProcessor(File inputFile, File outputFile) {
+	public static void runProcessor(File inputFile) {
     	
 		pc = 0;
 		reg = new int[32];
+       
+        memory = new byte[1048576]; // 1 MB memory
         progr = loadProgramFromFile(inputFile); //test
-        memory = new byte[1000000]; // 1 MB memory
-        
         boolean branch = false;
+        boolean halt = false;
+        
+        
+        // this should be part of the load program function
+        for (int i = 0; i < progr.length; i++) {
+        	memory[i*4] = (byte) (progr[i] & 0xFF);
+        	memory[i*4+1] = (byte) ((progr[i] >> 8) & 0xFF);
+        	memory[i*4+2] = (byte) ((progr[i] >> 16) & 0xFF);
+        	memory[i*4+3] = (byte) ((progr[i] >> 24) & 0xFF);
+        }
         
 
         while(true) {
         	
         	System.out.print("pc("+pc+") "); //test
 
-            int instr = progr[pc >> 2]; //divide by 4
+            int instr = (memory[pc] & 0xff) | ((memory[pc + 1] & 0xff) << 8) | ((memory[pc + 2] & 0xff) << 16) | (memory[pc + 3] << 24);
+            
+            System.out.print("instr("+instr+") "); //test
+            
             int opcode = instr & 0x7F;
             int rd = (instr >> 7) & 0x1F;
             int rs1 = (instr >> 15) & 0x1F;
@@ -65,7 +69,9 @@ public class Main {
             int immU = instr & 0xFFFFF000;
             int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 31) << 19);
             
-            //reg[2] = memory.length-1;
+            
+            
+            
 
             switch (opcode) {
             	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
@@ -81,7 +87,7 @@ public class Main {
             		break;
             	case 0x67: // JALR (jump & link register). JALR saves the next address (program counter +4) to the destination register, adds the immediate value encoded in the instruction to the source register, and jumps to that (even) address.
             		reg[rd] = pc + 4;
-            		pc = rs1 + immI;
+            		pc = reg[rs1] + immI;
             		branch = true;
             		break;
             	case 0x63: // BEQ/BNE/BLT/BGE/BLTU/BGEU
@@ -301,7 +307,7 @@ public class Main {
 	                		System.out.print(reg[10]);
 	                		break;
 	                	case 0xA: // exit - Halts the simulator
-	                		pc = progr.length * 4;
+	                		halt = true;
 	                		break;
 	                	default:
 	                        System.out.println("a7 " + reg[17] + " for Opcode " + opcode + " not yet implemented");
@@ -312,6 +318,10 @@ public class Main {
                 default:
                     System.out.println("Opcode " + opcode + " not yet implemented");
                     break;
+            }
+            
+            if (halt == true) {
+            	break;
             }
             
             //increment program counter if no branching occurred
@@ -331,16 +341,16 @@ public class Main {
             System.out.println();
             
           //exit program if condition is met
-            if ((pc >> 2) >= progr.length) {
+            if ((pc >> 2) >= memory.length) {
                 break;
             }
         }
 
         System.out.println("Program exit");
         
+        //reg[10] = 268435484;
         
-        
-        binaryDumpToFile(outputFile); //test
+        //binaryDumpToFile(outputFile); //test
         
         //long startTime = System.currentTimeMillis();
         //long estimatedTime = System.currentTimeMillis() - startTime;
