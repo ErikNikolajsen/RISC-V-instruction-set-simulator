@@ -7,56 +7,42 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class Main {
 
+public class Main {
+	
     static int pc;
     static int[] reg;
-    static int[] progr;
     static byte[] memory;
 
     public static void main(String[] args) {
     	
-    	if (new File(args[0]).isFile() && args[1] != null) { 
-    		runProcessor(new File(args[0]));
-    	} else {
-    		System.out.println("Program file does not exist");
-    	}
-
+//    	if (new File(args[0]).isFile()) { 
+//    		runProcessor(new File(args[0]), new File(args[1]));
+//    	} else {
+//    		System.out.println("Program file does not exist");
+//    	}
+    	
+    	runProcessor(new File(args[0]), new File(args[1]));
+//    	runProcessor(new File("./src/main/addlarge.bin"), new File("./src/main/addlarge.res"));
+//    	runProcessor(new File("./src/main/addlarge.bin"));
     }
     
-    // This getter is used for unit tests
-	public static int[] getReg() {
-		return reg;
-	}
+	public static void runProcessor(File inputFile, File outputFile) {
+		pc = 0; // reset program counter
+		reg = new int[32]; // 32 registers
+        memory = new byte[1048576]; // 1 MiB memory
+        
+        loadProgramFromFile(inputFile);
 
-	public static void runProcessor(File inputFile) {
-    	
-		pc = 0;
-		reg = new int[32];
-       
-        memory = new byte[1048576]; // 1 MB memory
-        progr = loadProgramFromFile(inputFile); //test
         boolean branch = false;
         boolean halt = false;
-        
-        
-        // this should be part of the load program function
-        for (int i = 0; i < progr.length; i++) {
-        	memory[i*4] = (byte) (progr[i] & 0xFF);
-        	memory[i*4+1] = (byte) ((progr[i] >> 8) & 0xFF);
-        	memory[i*4+2] = (byte) ((progr[i] >> 16) & 0xFF);
-        	memory[i*4+3] = (byte) ((progr[i] >> 24) & 0xFF);
-        }
         
 
         while(true) {
         	
-        	System.out.print("pc("+pc+") "); //test
+//        	System.out.print("pc("+pc+") "); //test
 
             int instr = (memory[pc] & 0xff) | ((memory[pc + 1] & 0xff) << 8) | ((memory[pc + 2] & 0xff) << 16) | (memory[pc + 3] << 24);
-            
-            System.out.print("instr("+instr+") "); //test
-            
             int opcode = instr & 0x7F;
             int rd = (instr >> 7) & 0x1F;
             int rs1 = (instr >> 15) & 0x1F;
@@ -70,9 +56,6 @@ public class Main {
             int immJ = ((instr >> 20) & 0x7FE) | ((instr >> 9) & 0x800) | (instr & 0xFF000) | ((instr >> 31) << 19);
             
             
-            
-            
-
             switch (opcode) {
             	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
             		reg[rd] = immU;
@@ -202,7 +185,7 @@ public class Main {
 	                    	}
 	                        break;
 	                    case 0x4: // XORI (exclusive or immediate). ANDI, ORI, XORI are logical operations that perform bitwise AND, OR, and XOR on register rs1 and the sign-extended 12-bit immediate and place the result in rd. Note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudoinstruction NOT rd, rs).
-	                    		reg[rd] = reg[rs1] ^ immI;
+	                    	reg[rd] = reg[rs1] ^ immI;
 	                        break;
 	                    case 0x6: // ORI (or immediate)
                     		reg[rd] = reg[rs1] | immI;
@@ -320,6 +303,7 @@ public class Main {
                     break;
             }
             
+            // stop the processor if ecall 10 occurred
             if (halt == true) {
             	break;
             }
@@ -334,58 +318,48 @@ public class Main {
             //ensure that the value of x0 remains zero
             reg[0] = 0;
             
-            //print register values for debugging
-            for (int i = 0; i < reg.length; ++i) {
-                System.out.print(reg[i] + " ");
-            }
-            System.out.println();
+//            //print register values for debugging
+//            for (int i = 0; i < reg.length; ++i) {
+//                System.out.print(reg[i] + " ");
+//            }
+//            System.out.println();
             
           //exit program if condition is met
             if ((pc >> 2) >= memory.length) {
                 break;
             }
         }
-
-        System.out.println("Program exit");
         
-        //reg[10] = 268435484;
         
-        //binaryDumpToFile(outputFile); //test
+        for (int i = 0; i < reg.length; ++i) {
+            System.out.print(reg[i] + " ");
+        }
+        System.out.println();
         
-        //long startTime = System.currentTimeMillis();
-        //long estimatedTime = System.currentTimeMillis() - startTime;
-        //System.out.println(estimatedTime); //test
+    	binaryDumpToFile(outputFile);
+    	
+        
+    	System.out.println("The output file \""+outputFile+"\" has been created");
     }
     
-    public static int[] loadProgramFromFile(File file) {
+    public static void loadProgramFromFile(File file) {
     	try {
     	    // create a reader
     	    FileInputStream fis = new FileInputStream(file);
     	    BufferedInputStream reader = new BufferedInputStream(fis);
-
-    	    // set program memory to size of program
-    	    int[] input = new int[reader.available() >> 2];
     	    
-    	    // read bytes into program memory as 32-bit instructions
-    	    for (int i = 0; i < input.length; i++) {
-    	    	for (int j = 0; j < 4; j++) {
-    	    		input[i] = (reader.read() << 8 * j) | input[i];
-	    	    }
+    	    // write instructions into memory in little-endian order
+    	    int byteAmount = reader.available();
+    	    for (int i = 0; i < byteAmount; i++) {
+	    		memory[i] = (byte) reader.read();
 	    	}
     	    
     	    // close the reader
     	    reader.close();
-    	    
-//    	    for (int i : input) {
-//    	    	System.out.println(i);
-//    	    }
-    	    
-    	    return input;
 
     	} catch (IOException ex) {
     		System.out.println("Program load failure");
     	    ex.printStackTrace();
-    	    return new int[0];
     	}
     }
     
@@ -416,6 +390,36 @@ public class Main {
     	}
     }
     
+    // function used for loading .res files for unit tests
+    public static int[] loadTestRegisterFromFile(File file) {
+		try {
+		    // create a reader
+		    FileInputStream fis = new FileInputStream(file);
+		    BufferedInputStream reader = new BufferedInputStream(fis);
+		    
+		    // load register values
+		    int[] input = new int[reader.available() >> 2];
+		    for (int i = 0; i < input.length; i++) {
+		    	for (int j = 0; j < 4; j++) {
+		    		input[i] = (reader.read() << 8 * j) | input[i];
+	    	    }
+	    	}
+		    
+		    // close the reader
+		    reader.close();
+		    
+		    return input;
+	
+		} catch (IOException ex) {
+			System.out.println("Program load failure");
+		    ex.printStackTrace();
+		    return new int[0];
+		}
+	}
     
+    // getter used for unit tests
+ 	public static int[] getReg() {
+ 		return reg;
+ 	}
 
 }

@@ -12,20 +12,20 @@ class Task2Test {
 	
 	@Test
 	void branchcnt() {
-		Main.runProcessor(new File("./tests/task2/branchcnt.bin"));
-		assertArrayEquals(Main.getReg(), Main.loadProgramFromFile(new File("./tests/task2/branchcnt.res")));
+		Main.runProcessor(new File("./tests/task2/branchcnt.bin"), null);
+		assertArrayEquals(Main.getReg(), Main.loadTestRegisterFromFile(new File("./tests/task2/branchcnt.res")));
 	}
 	
 	@Test
 	void branchmany() {
-		Main.runProcessor(new File("./tests/task2/branchmany.bin"));
-		assertArrayEquals(Main.getReg(), Main.loadProgramFromFile(new File("./tests/task2/branchmany.res")));
+		Main.runProcessor(new File("./tests/task2/branchmany.bin"), null);
+		assertArrayEquals(Main.getReg(), Main.loadTestRegisterFromFile(new File("./tests/task2/branchmany.res")));
 	}
 	
 	@Test
 	void branchtrap() {
-		Main.runProcessor(new File("./tests/task2/branchtrap.bin"));
-		assertArrayEquals(Main.getReg(), Main.loadProgramFromFile(new File("./tests/task2/branchtrap.res")));
+		Main.runProcessor(new File("./tests/task2/branchtrap.bin"), null);
+		assertArrayEquals(Main.getReg(), Main.loadTestRegisterFromFile(new File("./tests/task2/branchtrap.res")));
 	}
 
 }
