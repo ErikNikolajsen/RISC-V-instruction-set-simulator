@@ -303,6 +303,9 @@ public class Main {
                     break;
             }
             
+            //ensure that the value of x0 remains zero
+            reg[0] = 0;
+            
             // stop the processor if ecall 10 occurred
             if (halt == true) {
             	break;
@@ -315,8 +318,7 @@ public class Main {
             	branch = false;
             }
             
-            //ensure that the value of x0 remains zero
-            reg[0] = 0;
+            
             
 //            //print register values for debugging
 //            for (int i = 0; i < reg.length; ++i) {
@@ -336,10 +338,12 @@ public class Main {
         }
         System.out.println();
         
-    	binaryDumpToFile(outputFile);
-    	
+        if (outputFile != null) {
+        	binaryDumpToFile(outputFile);
+        	System.out.println("The output file \""+outputFile+"\" has been created");
+        }
         
-    	System.out.println("The output file \""+outputFile+"\" has been created");
+    	
     }
     
     public static void loadProgramFromFile(File file) {
