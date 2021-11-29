@@ -7,10 +7,10 @@ The simulator implements the RISC-V integer instruction set ([RV32I](https://ris
 The ecall instruction only supports the exit function `ecall 10` (see [Ripes env. call](https://github.com/mortbopet/Ripes/wiki/Environment-calls)).
 
 ## Setup
-Compile the the program to a .jar file using JDK 11
+Compile the the program to a .jar file using JDK 11.
 
 
-The run the program as following:
+Then run the program as following:
 
 ```
 java -jar riscSimulator.jar <inputFile> <outputFile>
