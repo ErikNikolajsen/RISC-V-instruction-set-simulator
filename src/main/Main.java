@@ -54,18 +54,18 @@ public class Main {
             
             
             switch (opcode) {
-            	case 0x37: // LUI (load upper immediate). Is used to build 32-bit constants and uses the U-type format. LUI places the U-immediate value in the top 20 bits of the destination register rd, filling in the lowest 12 bits with zeros.
+            	case 0x37: // LUI (load upper immediate)
             		reg[rd] = immU;
             		break;
-            	case 0x17: // AUIPC (add upper immediate to PC). Is used to build pc-relative addresses and uses the U-type format. AUIPC forms a 32-bit offset from the 20-bit U-immediate, filling in the lowest 12 bits with zeros, adds this offset to the address of the AUIPC instruction, then places the result in register rd.
+            	case 0x17: // AUIPC (add upper immediate to PC)
             		reg[rd] = immU + pc;
             		break;
-            	case 0x6F: // JAL (jump & link). JAL saves the next address (program counter +4) to the destination register, adds the immediate value encoded in the instruction to the program counter, and jumps to that address.
+            	case 0x6F: // JAL (jump & link)
             		reg[rd] = pc + 4;
             		pc += immJ;
             		branch = true;
             		break;
-            	case 0x67: // JALR (jump & link register). JALR saves the next address (program counter +4) to the destination register, adds the immediate value encoded in the instruction to the source register, and jumps to that (even) address.
+            	case 0x67: // JALR (jump & link register)
             		reg[rd] = pc + 4;
             		pc = reg[rs1] + immI;
             		branch = true;
@@ -73,37 +73,37 @@ public class Main {
             	case 0x63: // BEQ/BNE/BLT/BGE/BLTU/BGEU
             		
             		switch (funct3) { 
-	                	case 0x0: // BEQ (branch if equal). BEQ take the branch if registers rs1 and rs2 are equal.
+	                	case 0x0: // BEQ (branch if equal)
 	                		if (reg[rs1] == reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
 	                		break;
-	                	case 0x1: // BNE (branch if not equal). BNE take the branch if registers rs1 and rs2 are unequal.
+	                	case 0x1: // BNE (branch if not equal)
 	                		if (reg[rs1] != reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
 	                		break;
-	                	case 0x4: // BLT (branch if less than). BLT take the branch if rs1 is less than rs2, using signed comparison.
+	                	case 0x4: // BLT (branch if less than)
 	                		if (reg[rs1] < reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
 	                		break;
-	                	case 0x5: // BGE (branch if greater than or equal). BGE take the branch if rs1 is greater than or equal to rs2, using signed comparison.
+	                	case 0x5: // BGE (branch if greater than or equal)
 	                		if (reg[rs1] >= reg[rs2]) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
 	                		break;
-	                	case 0x6: // BLTU (branch if less than unsigned). BLTU take the branch if rs1 is less than rs2, using unsigned comparison.
+	                	case 0x6: // BLTU (branch if less than unsigned)
 	                		if ((reg[rs1] & 0xFFFFFFFFL) < (reg[rs2] & 0xFFFFFFFFL)) {
 	                			pc += immB;
 	                			branch = true;
 	                		}
 	                		break;
-	                	case 0x7: // BGEU (branch if greater than or equal). BGEU take the branch if rs1 is greater than or equal to rs2, using unsigned comparison.
+	                	case 0x7: // BGEU (branch if greater than or equal)
 	                		if ((reg[rs1] & 0xFFFFFFFFL) >= (reg[rs2] & 0xFFFFFFFFL)) {
 	                			pc += immB;
 	                			branch = true;
@@ -118,19 +118,19 @@ public class Main {
             	case 0x3: // LB/LH/LW/LBU/LHU
             		
             		switch (funct3) { 
-	                	case 0x0: // LB (load byte). LB and LBU are defined analogously for 8-bit values.
+	                	case 0x0: // LB (load byte)
 	                		reg[rd] = memory[reg[rs1] + immI];
 	                		break;
-	                	case 0x1: // LH (load halfword). LH loads a 16-bit value from memory, then sign-extends to 32-bits before storing in rd.
+	                	case 0x1: // LH (load halfword)
 	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | (memory[reg[rs1] + immI + 1] << 8);
 	                		break;
-	                	case 0x2: // LW (load word). The LW instruction loads a 32-bit value from memory into rd.
+	                	case 0x2: // LW (load word)
 	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | ((memory[reg[rs1] + immI + 1] & 0xff) << 8) | ((memory[reg[rs1] + immI + 2] & 0xff) << 16) | (memory[reg[rs1] + immI + 3] << 24);
 	                		break;
-	                	case 0x4: // LBU (load byte unsigned). LB and LBU are defined analogously for 8-bit values.
+	                	case 0x4: // LBU (load byte unsigned)
 	                		reg[rd] = memory[reg[rs1] + immI] & 0xff;
 	                		break;
-	                	case 0x5: // LHU (load half unsigned). LHU loads a 16-bit value from memory but then zero extends to 32-bits before storing in rd.
+	                	case 0x5: // LHU (load half unsigned)
 	                		reg[rd] = (memory[reg[rs1] + immI] & 0xff) | ((memory[reg[rs1] + immI + 1] & 0xff) << 8);
 	                		break;
 	                	default:
@@ -142,14 +142,14 @@ public class Main {
             	case 0x23: // SB/SH/SW
             		
             		switch (funct3) { 
-	                	case 0x0: // SB (store byte). The SB instruction store a 8-bit value from the low bits of register rs2 to memory.
+	                	case 0x0: // SB (store byte)
 	                		memory[reg[rs1] + immS] = (byte) (reg[rs2]);
 	                		break;
-	                	case 0x1: // SH (store halfword). The SH instructions store a 16-bit value from the low bits of register rs2 to memory.
+	                	case 0x1: // SH (store halfword)
 	                		memory[reg[rs1] + immS] = (byte) (reg[rs2] & 0xff);
 	                		memory[reg[rs1] + immS + 1] = (byte) ((reg[rs2] >> 8) & 0xff);
 	                		break;
-	                	case 0x2: // SW (store word). The SW instructions store a 32-bit value from the low bits of register rs2 to memory.
+	                	case 0x2: // SW (store word)
 	                		memory[reg[rs1] + immS] = (byte) (reg[rs2] & 0xff);
 	                		memory[reg[rs1] + immS + 1] = (byte) ((reg[rs2] >> 8) & 0xff);
 	                		memory[reg[rs1] + immS + 2] = (byte) ((reg[rs2] >> 16) & 0xff);
@@ -164,24 +164,24 @@ public class Main {
                 case 0x13: // ADDI/SLTI/SLTIU/XORI/ORI/ANDI/SLLI/SRLI/SRAI
                 	
                 	switch (funct3) {  
-	                    case 0x0: // ADDI (add Immediate). ADDI adds the sign-extended 12-bit immediate to register rs1. Arithmetic overflow is ignored and the result is simply the low XLEN bits of the result. ADDI rd, rs1, 0 is used to implement the MV rd, rs1 assembler pseudoinstruction.
+	                    case 0x0: // ADDI (add Immediate)
 	                        reg[rd] = reg[rs1] + immI;
 	                        break;
-	                    case 0x2: // SLTI (set less than immediate). Places the value 1 in register rd if register rs1 is less than the sign-extended immediate when both are treated as signed numbers, else 0 is written to rd.
+	                    case 0x2: // SLTI (set less than immediate)
 	                    	if (reg[rs1] < immI) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
-	                    case 0x3: // SLTIU (set less than immediate unsigned). SLTIU is similar but compares the values as unsigned numbers (i.e., the immediate is first sign-extended to XLEN bits then treated as an unsigned number). Note, SLTIU rd, rs1, 1 sets rd to 1 if rs1 equals zero, otherwise sets rd to 0 (assembler pseudoinstruction SEQZ rd, rs).
+	                    case 0x3: // SLTIU (set less than immediate unsigned)
 	                    	if (reg[rs1] < (immI & 0xFFFFFFFFL)) {
 	                    		reg[rd] = 1;
 	                    	} else {
 	                    		reg[rd] = 0;
 	                    	}
 	                        break;
-	                    case 0x4: // XORI (exclusive or immediate). ANDI, ORI, XORI are logical operations that perform bitwise AND, OR, and XOR on register rs1 and the sign-extended 12-bit immediate and place the result in rd. Note, XORI rd, rs1, -1 performs a bitwise logical inversion of register rs1 (assembler pseudoinstruction NOT rd, rs).
+	                    case 0x4: // XORI (exclusive or immediate)
 	                    	reg[rd] = reg[rs1] ^ immI;
 	                        break;
 	                    case 0x6: // ORI (or immediate)
@@ -190,16 +190,16 @@ public class Main {
 	                    case 0x7: // ANDI (and immediate)
                     		reg[rd] = reg[rs1] & immI;
                     		break;
-	                    case 0x1: // SLLI (shift left logical immediate).  SLLI is a logical left shift (zeros are shifted into the lower bits).
+	                    case 0x1: // SLLI (shift left logical immediate)
                     		reg[rd] = reg[rs1] << immI;
                     		break;
 	                    case 0x5:
 	                    	
 	                    	switch (funct7) { 
-		                    	case 0x0: // SRLI (shift right logical immediate). SRLI is a logical right shift (zeros are shifted into the upper bits).
+		                    	case 0x0: // SRLI (shift right logical immediate)
 		                    		reg[rd] = reg[rs1] >>> immI;
 		                        	break;
-			                    case 0x20: // SRAI (shift right arithmetic immediate). SRAI is an arithmetic right shift (the original sign bit is copied into the vacated upper bits).
+			                    case 0x20: // SRAI (shift right arithmetic immediate)
 		                    		reg[rd] = reg[rs1] >> immI;
 		                        	break;
 			                    default:
@@ -220,10 +220,10 @@ public class Main {
 	                	case 0x0: // ADD/SUB
 	                		
 	                		switch (funct7) { 
-			                	case 0x0: // ADD (addition). ADD performs the addition of rs1 and rs2. Overflows are ignored and the low XLEN bits of results are written to the destination rd.
+			                	case 0x0: // ADD (addition)
 			                		reg[rd] = reg[rs1] + reg[rs2];
 			                		break;
-			                	case 0x20: // SUB (subtraction). SUB performs the subtraction of rs2 from rs1. Overflows are ignored and the low XLEN bits of results are written to the destination rd.
+			                	case 0x20: // SUB (subtraction)
 			                		reg[rd] = reg[rs1] - reg[rs2];
 			                		break;
 			                	default:
@@ -232,17 +232,17 @@ public class Main {
 			            	}
 			            	break;
 			            
-	                	case 0x1: // SLL (logical left shift). SLL perform logical left shift on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+	                	case 0x1: // SLL (logical left shift)
 	                		reg[rd] = reg[rs1] << reg[rs2];
 	                		break;
-	                	case 0x2: // SLT (set if less than). SLT perform signed compares, writing 1 to rd if rs1 < rs2, 0 otherwise.
+	                	case 0x2: // SLT (set if less than)
 	                		if (reg[rs1] < reg[rs2]) {
 	                			reg[rd] = 1;
 	                		} else {
 	                			reg[rs1] = 0;
 	                		}
 	                		break;
-	                	case 0x3: // SLTU (set if less than unsigned). SLTU perform unsigned compares, writing 1 to rd if rs1 < rs2, 0 otherwise. Note, SLTU rd, x0, rs2 sets rd to 1 if rs2 is not equal to zero, otherwise sets rd to zero (assembler pseudoinstruction SNEZ rd, rs).
+	                	case 0x3: // SLTU (set if less than unsigned)
 	                		if (reg[rs1] < (reg[rs2] & 0xFFFFFFFFL)) {
 	                			reg[rd] = 1;
 	                		} else {
@@ -255,10 +255,10 @@ public class Main {
 	                	case 0x5: // SRL/SRA
 	                		
 	                		switch (funct7) { 
-			                	case 0x0: // SRL (shift right logical). SRL perform logical right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+			                	case 0x0: // SRL (shift right logical)
 			                		reg[rd] = reg[rs1] >>> reg[rs2];
 			                		break;
-			                	case 0x20: // SRA (shift right arithmetic). SRA perform arithmetic right shifts on the value in register rs1 by the shift amount held in the lower 5 bits of register rs2.
+			                	case 0x20: // SRA (shift right arithmetic)
 			                		reg[rd] = reg[rs1] >> reg[rs2];
 			                		break;
 			                	default:
