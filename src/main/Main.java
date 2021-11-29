@@ -283,9 +283,6 @@ public class Main {
                 case 0x73: // ECALL - Environment call
                 	
                 	switch (reg[17]) { 
-	                	case 0x0: // print_int - Prints the value located in a0 as a signed integer
-	                		System.out.print(reg[10]);
-	                		break;
 	                	case 0xA: // exit - Halts the simulator
 	                		halt = true;
 	                		break;
