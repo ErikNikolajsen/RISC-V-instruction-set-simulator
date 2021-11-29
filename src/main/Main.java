@@ -16,15 +16,14 @@ public class Main {
 
     public static void main(String[] args) {
     	
-//    	if (new File(args[0]).isFile()) { 
-//    		runProcessor(new File(args[0]), new File(args[1]));
-//    	} else {
-//    		System.out.println("Program file does not exist");
-//    	}
+    	if (args.length != 2) {
+    		System.out.println("Incorrect number of arguments");
+    	} else if (!(new File(args[0]).isFile())) {
+    		System.out.println("First argument is not a valid file");
+    	} else if (new File(args[0]).isFile()) { 
+    		runProcessor(new File(args[0]), new File(args[1]));
+    	} 
     	
-    	runProcessor(new File(args[0]), new File(args[1]));
-//    	runProcessor(new File("./src/main/addlarge.bin"), new File("./src/main/addlarge.res"));
-//    	runProcessor(new File("./src/main/addlarge.bin"));
     }
     
 	public static void runProcessor(File inputFile, File outputFile) {
@@ -40,8 +39,6 @@ public class Main {
 
         while(true) {
         	
-//        	System.out.print("pc("+pc+") "); //test
-
             int instr = (memory[pc] & 0xff) | ((memory[pc + 1] & 0xff) << 8) | ((memory[pc + 2] & 0xff) << 16) | (memory[pc + 3] << 24);
             int opcode = instr & 0x7F;
             int rd = (instr >> 7) & 0x1F;
@@ -318,21 +315,14 @@ public class Main {
             	branch = false;
             }
             
-            
-            
-//            //print register values for debugging
-//            for (int i = 0; i < reg.length; ++i) {
-//                System.out.print(reg[i] + " ");
-//            }
-//            System.out.println();
-            
-          //exit program if condition is met
+            //exit program if condition is met
             if ((pc >> 2) >= memory.length) {
                 break;
             }
         }
         
-        
+        System.out.println();
+        System.out.println("Resulting registers x0-x31:");
         for (int i = 0; i < reg.length; ++i) {
             System.out.print(reg[i] + " ");
         }
